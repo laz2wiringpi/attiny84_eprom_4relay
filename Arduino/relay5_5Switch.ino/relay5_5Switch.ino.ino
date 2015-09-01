@@ -9,16 +9,17 @@
 //#ifdef  __AVR_ATTINY84__  
  
 //#define STATUSLED   0 
-#define  startPin   0     // the number of the pushbutton pin
-
+#define  startPin   7     // the number of the pushbutton pin
+#define  ledred   10 
+#define   ledyellow   9 
 #define  bounceinterval   12 
 #define Eprom_array_size 100
 
 
-int Relaypins[] = { 2, 3, 4, 5 };
-int RelayInputpins[] = { 7, 8, 9, 10 };
+int Relaypins[] = { 0, 1,2, 3 };
+int RelayInputpins[] = { 4, 6, 5, 8}; 
 
-// 6 not used 
+ 
 
 //#endif
 
@@ -42,7 +43,6 @@ int RelayInputpins[] = { 8, 9, 10, 11 };
 
 
 int RelayInputpinsbuttonState[4] = { 0, 0, 0, 0 };
-
 
 
 
@@ -96,7 +96,17 @@ void setup() {
 		digitalWrite(Relaypins[i], LOW);
 	}
 	
-		
+	  pinMode(ledred, OUTPUT);
+  pinMode(ledyellow, OUTPUT);
+  
+ 
+
+
+  digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW
+  digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
+
+
+  
 
  
 	pinMode(startPin, INPUT_PULLUP);
@@ -202,14 +212,15 @@ void dosetuploop(){
 }
 void setrelays( int bitstate){
 
-	 
+
+
 		digitalWrite(Relaypins[0], (bitstate & 1));
 		digitalWrite(Relaypins[1], (bitstate & 2));
 		digitalWrite(Relaypins[2], (bitstate & 4));
 		digitalWrite(Relaypins[3], (bitstate & 8));
 
 	 
-	 
+ 
 
 
 }
@@ -277,9 +288,18 @@ void flashstatus( int fcount )
 }
 */
 void readflashdata(){
-	
+ 
+         digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
+       delay(1000);
+     digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
+       delay(300);
+
+    
 	for (int i = 1; i < Eprom_array_size; i++)
 	{
+   
+
+        digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
 		//digitalWrite(STATUSLED, HIGH);
 		int	addrtmp = i * 3;
 		int tmph = EEPROM.read(addrtmp -2 );
@@ -292,10 +312,19 @@ void readflashdata(){
 		storetimepin[i] = tmpbtn ;
 		// EEPROM.read (i, Storingdata);
 		//digitalWrite(STATUSLED, LOW);
-
+   digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
 	}
 
-//	flashstatus(5);
+ for (int i = 1; i < 10; i++)
+ {
+         digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
+       delay(200);
+     digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
+      delay(200);
+      
+ }
+      
+       
 
 }
 
