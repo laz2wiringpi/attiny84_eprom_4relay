@@ -5,42 +5,52 @@
 #include <EEPROM.h>
 
 
-
-//#ifdef  __AVR_ATTINY84__  
- 
-//#define STATUSLED   0 
-#define  startPin   7     // the number of the pushbutton pin
+#if defined (__AVR_ATtiny84__)
+#define  startPin   4     // the number of the pushbutton pin
 #define  ledred   10 
 #define   ledyellow   9 
 #define  bounceinterval   12 
 #define Eprom_array_size 100
 
+#define _RELAY1 0
+#define _RELAY2 1
+#define _RELAY3 2
+#define _RELAY0 3
 
-int Relaypins[] = { 0, 1,2, 3 };
-int RelayInputpins[] = { 4, 6, 5, 8}; 
+#define _SW_RELAY1 5
+#define _SW_RELAY2 6
+#define _SW_RELAY3 7
+#define _SW_RELAY0 8
 
- 
 
-//#endif
 
- 
 
-/* 
- //#ifdef   __OTHER  
- 
-//#define STATUSLED   13 
+#else
+
 #define  startPin   12     // the number of the pushbutton pin
+#define  ledred   2 
+#define   ledyellow   11
+
+#define _RELAY1 4
+#define _RELAY2 5
+#define _RELAY3 6
+#define _RELAY0 7
+
+#define _SW_RELAY1 8
+#define _SW_RELAY2 9
+#define _SW_RELAY3 10
+#define _SW_RELAY0 3
 
 #define  bounceinterval   12 
 #define Eprom_array_size 100
 
 
-int Relaypins[] = { 4, 5, 6, 7 };
-int RelayInputpins[] = { 8, 9, 10, 11 };
 
-//#endif
-*/
 
+#endif 
+ 
+int Relaypins[] = { _RELAY0, _RELAY1, _RELAY2, _RELAY3 };
+int RelayInputpins[] = { _SW_RELAY0, _SW_RELAY1, _SW_RELAY2, _SW_RELAY3 };
 
 int RelayInputpinsbuttonState[4] = { 0, 0, 0, 0 };
 
@@ -51,10 +61,10 @@ int RelayInputpinsbuttonState[4] = { 0, 0, 0, 0 };
 int readingdata = 0;
 int Storingdata = 0;
 
-int lastbuttonwaittime = 0;
+unsigned long  lastbuttonwaittime = 0;
 int  readingstart = 0;
 
-int storetime[Eprom_array_size];
+unsigned  int storetime[Eprom_array_size];
 byte  storetimepin[Eprom_array_size];
 
 
@@ -68,7 +78,8 @@ Bounce Bouncepin3 = Bounce();
 // Instantiate another Bounce object
 Bounce Bouncepin4 = Bounce();
 
-
+ 
+// Bounce BouncestartPin = Bounce();
 ///
  
 //Bounce bounce_Storingdata = Bounce();
@@ -79,7 +90,9 @@ void setup() {
 		pinMode(RelayInputpins[i], INPUT_PULLUP);
 
 	}
-		
+	
+	pinMode(startPin, INPUT_PULLUP);
+
 	Bouncepin1.attach(RelayInputpins[0]);
 	Bouncepin1.interval(bounceinterval); // interval in ms
 	Bouncepin2.attach(RelayInputpins[1]);
@@ -89,6 +102,9 @@ void setup() {
 	Bouncepin4.attach(RelayInputpins[3]);
 	Bouncepin4.interval(bounceinterval); // interval in ms
 
+
+//	BouncestartPin.attach(RelayInputpins[3]);
+//	BouncestartPin.interval(bounceinterval); // interval in ms
 
 
 	for (int i = 0; i <= 3; i++){
@@ -101,15 +117,12 @@ void setup() {
   
  
 
-
-  digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW
-  digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
-
+ 
 
   
 
  
-	pinMode(startPin, INPUT_PULLUP);
+ 
  
 	
 	//pinMode(STATUSLED, OUTPUT);
@@ -117,36 +130,78 @@ void setup() {
 
 	 
 
-	
-    
-	//bounce_Storingdata.update();
-
-
-	  readingstart = digitalRead(startPin );
-
-	  if (readingstart) 
+  readingstart = 0;
+ 
       readflashdata();
+
+	  // statup status
+	  digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW
+	  digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
+
+
+	  digitalWrite(ledred, HIGH);    // turn the LED off by making the voltage LOW
+	  digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
+	  delay(500);
+	  digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW
+	  digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
+
+
 
 }
 
  
 void dosetuploop(){
 
+   // wait for depress
+	while (  !digitalRead(startPin)) {
+		// 
+	}
+
+
+	delay(250); // bounce ignore 
+
 	int reading[4] = { 0, 0, 0, 0 };
 	int savedata = 0;
 	int fistsave = 1;
 //	flashstatus(3);
+
+	Storingdata = 0;
+ 
+	lastbuttonwaittime = millis();
+
 	while (true)
 	{
 
+	 
 
-		if ( digitalRead(startPin) )
-		{
-			readingstart = true;
-			writeflash();
-			return;
 
-		}
+		readingstart = !digitalRead(startPin);
+
+			if (readingstart)
+			{
+
+				readingstart = true;
+				digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW
+				digitalWrite(ledyellow, HIGH);    // turn the LED off by making the voltage LOW
+				storetime[Storingdata + 1] = 0;
+
+				writeflash();
+				while (!digitalRead(startPin)) {
+					// 
+				}
+
+
+				delay(250); // bounce ignore 
+				digitalWrite(ledyellow, LOW);    // turn the LED off by making the voltage LOW
+		 
+				return;
+
+			}
+
+		 
+
+
+		 
 		 
 		Bouncepin1.update(); 
 		Bouncepin2.update();
@@ -179,9 +234,19 @@ void dosetuploop(){
 			 
 
 
-			int buttonwaittime = millis();
+			unsigned  long  buttonwaittime = millis();
 			 
-				 
+		 
+			if ((buttonwaittime - lastbuttonwaittime) > 65535) {
+
+				readingstart = true;
+				digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW
+				digitalWrite(ledyellow, HIGH);    // turn the LED off by making the voltage LOW
+			 
+				digitalWrite(ledyellow, LOW);    // turn the LED off by making the voltage LOW
+				return;
+			}
+			 
 
 			//if (Storingdata >= Eprom_array_size)
 			//	Storingdata = 0;
@@ -233,17 +298,30 @@ void loop(){
 //	int readingstart = bounce_Storingdata.read();
  	
 
+	//bounce_Storingdata.update();
+ 
 
-	if (!readingstart)
+
+	readingstart = !digitalRead(startPin);
+	 
+
+	if (readingstart)
 	{
-		
+		digitalWrite(ledred, HIGH);    // turn the LED off by making the voltage LOW
+		digitalWrite(ledyellow, LOW);    // turn the LED off by making the voltage LOW 
 		dosetuploop();
-
+		delay(250);
+	 
+		 
 	}
 	 
 	else
 	{
+		digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW	
+		digitalWrite(ledyellow , HIGH);    // turn the LED off by making the voltage LOW 
 		playback();
+	   	 
+		digitalWrite(ledyellow, LOW);
 	}
  
  }
@@ -272,8 +350,18 @@ void writeflash(){
 	}
 	
 //	flashstatus(10);
+	for (int i = 1; i < 5; i++)
+	{
+	digitalWrite(ledyellow, HIGH);    // turn the LED off by making the voltage LOW 
+	digitalWrite(ledred , HIGH);    // turn the LED off by making the voltage LOW 
+	delay(300);
+	digitalWrite(ledyellow, LOW);    // turn the LED off by making the voltage LOW 
+	digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW 
+	delay(300);
+	}
+	digitalWrite(ledyellow, LOW);    // turn the LED off by making the voltage LOW 
+	digitalWrite(ledred, LOW);    // turn the LED off by making the voltage LOW 
 
- 
 }
 /*
 void flashstatus( int fcount )
@@ -289,17 +377,14 @@ void flashstatus( int fcount )
 */
 void readflashdata(){
  
-         digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
-       delay(1000);
-     digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
-       delay(300);
+     
 
     
 	for (int i = 1; i < Eprom_array_size; i++)
 	{
    
 
-        digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
+ 
 		//digitalWrite(STATUSLED, HIGH);
 		int	addrtmp = i * 3;
 		int tmph = EEPROM.read(addrtmp -2 );
@@ -312,20 +397,36 @@ void readflashdata(){
 		storetimepin[i] = tmpbtn ;
 		// EEPROM.read (i, Storingdata);
 		//digitalWrite(STATUSLED, LOW);
-   digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
+ 
 	}
 
- for (int i = 1; i < 10; i++)
- {
-         digitalWrite(ledyellow, HIGH);   // turn the LED on (HIGH is the voltage level)
-       delay(200);
-     digitalWrite(ledyellow, LOW);   // turn the LED on (HIGH is the voltage level)
-      delay(200);
-      
- }
+ 
       
        
 
+}
+
+int DELAYCHECKbutton(int delaytime) {
+
+
+
+	unsigned long currentMillis = millis();
+	unsigned long tmppreviousMillis = currentMillis;
+	 
+		
+
+	while (currentMillis - tmppreviousMillis <= delaytime) {
+
+ 
+		if (!digitalRead(startPin))
+			return 1;
+		currentMillis = millis();
+
+	}
+	return 0;
+
+
+	//	delay(delaytime);
 }
 
 void playback(){
@@ -341,7 +442,11 @@ void playback(){
 		setrelays(tmpbtn);
 	//	digitalWrite(Relaypins[0], tmpbtn);
 	//	digitalWrite(STATUSLED, HIGH);
-		delay(tmp);
+		if (DELAYCHECKbutton(tmp))
+		{
+
+		 	return;
+		}
 	//	digitalWrite(STATUSLED, LOW);
 	}
  
