@@ -1,4 +1,9 @@
 # Ignore list for Eagle, a PCB layout tool
+Visual Micro
+tmp
+*.suo
+*.sdf
+*.filters
 
 # Backup files
 *.s#?
